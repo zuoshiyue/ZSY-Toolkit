@@ -1,0 +1,25 @@
+import customtkinter as ctk
+
+class MainWindow(ctk.CTk):
+    def __init__(self, config_manager):
+        self.config_manager = config_manager
+
+    def _load_module_to_tab(self, module, tab):
+        """加载模块UI到指定选项�?
+        
+        Args:
+            module: 模块实例
+            tab: 目标选项�?
+        """
+        try:
+            module_widget = module.create_widget(tab, self.config_manager)
+            if module_widget:
+                module_widget.pack(fill="both", expand=True, padx=10, pady=10)
+        except Exception as e:
+            self.logger.error(f"加载模块UI失败: {str(e)}")
+            error_label = ctk.CTkLabel(
+                tab,
+                text=f"加载模块失败: {str(e)}",
+                text_color="red"
+            )
+            error_label.pack(padx=20, pady=20)

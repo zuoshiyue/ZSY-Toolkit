@@ -1,0 +1,13 @@
+customtkinter==5.2.0
+pillow==10.0.0
+pystray==0.19.4
+pyautogui==0.9.54
+psutil==5.9.5
+SQLite3==2.6.0
+tinydb==4.8.0
+pycaw==20230322; platform_system == "Windows"
+pywin32==306; platform_system == "Windows"
+py-applescript==1.0.3; platform_system == "Darwin"
+pulsectl==22.3.2; platform_system == "Linux"
+sentry-sdk==1.28.1
+pyinstaller==5.13.0 
