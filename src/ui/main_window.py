@@ -106,8 +106,16 @@ class MainWindow:
         )
         self.theme_button.pack(side="right", padx=10)
         
+        # 创建带滚动条的内容区域
+        self.content_frame = ctk.CTkScrollableFrame(
+            self.main_frame,
+            orientation="vertical",
+            height=500  # 设置一个合适的初始高度
+        )
+        self.content_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
         # 创建选项卡控件
-        self.tab_view = ctk.CTkTabview(self.main_frame)
+        self.tab_view = ctk.CTkTabview(self.content_frame)
         self.tab_view.pack(fill="both", expand=True, padx=5, pady=5)
         
         # 添加基本选项卡
@@ -185,6 +193,37 @@ class MainWindow:
         # 创建框架容器
         frame = ctk.CTkFrame(self.system_tab)
         frame.pack(fill="both", expand=True, padx=10, pady=10)
+        
+        # 显示器控制部分
+        display_frame = ctk.CTkFrame(frame)
+        display_frame.pack(fill="x", padx=10, pady=10)
+        
+        display_label = ctk.CTkLabel(
+            display_frame,
+            text="显示器控制",
+            font=ctk.CTkFont(size=16, weight="bold")
+        )
+        display_label.pack(anchor="w", padx=10, pady=5)
+        
+        # 显示器控制按钮区域
+        display_buttons_frame = ctk.CTkFrame(display_frame)
+        display_buttons_frame.pack(fill="x", padx=10, pady=5)
+        
+        toggle_mode_button = ctk.CTkButton(
+            display_buttons_frame,
+            text="切换显示器模式",
+            width=120,
+            command=self._toggle_display_mode
+        )
+        toggle_mode_button.pack(side="left", padx=10, pady=10)
+        
+        rotate_display_button = ctk.CTkButton(
+            display_buttons_frame,
+            text="旋转第二屏",
+            width=120,
+            command=self._rotate_display
+        )
+        rotate_display_button.pack(side="left", padx=10, pady=10)
         
         # 电源管理部分
         power_frame = ctk.CTkFrame(frame)
@@ -459,6 +498,43 @@ class MainWindow:
         # 关闭应用前进行清理
         self.app_manager.shutdown()
         self.root.destroy()
+    
+    def _on_opacity_change(self, value):
+        """透明度滑块变化事件处理
+        
+        Args:
+            value: 新的透明度值(20-100)
+        """
+        try:
+            opacity = float(value) / 100
+            self.root.attributes('-alpha', opacity)
+            self.logger.debug(f"窗口透明度已设置为: {opacity}")
+        except Exception as e:
+            self.logger.error(f"设置窗口透明度失败: {str(e)}")
+    
+    def _toggle_display_mode(self):
+        """切换显示器模式（扩展/镜像）"""
+        try:
+            result = self.app_manager.platform_adapter.toggle_display_mode()
+            if result:
+                self.status_label.configure(text="显示器模式切换成功")
+            else:
+                self.status_label.configure(text="显示器模式切换失败")
+        except Exception as e:
+            self.status_label.configure(text=f"显示器模式切换出错: {str(e)}")
+            self.logger.error(f"显示器模式切换失败: {str(e)}")
+    
+    def _rotate_display(self):
+        """旋转第二显示器"""
+        try:
+            result = self.app_manager.platform_adapter.rotate_display()
+            if result:
+                self.status_label.configure(text="显示器旋转成功")
+            else:
+                self.status_label.configure(text="显示器旋转失败")
+        except Exception as e:
+            self.status_label.configure(text=f"显示器旋转出错: {str(e)}")
+            self.logger.error(f"显示器旋转失败: {str(e)}")
     
     def run(self):
         """运行主窗口"""

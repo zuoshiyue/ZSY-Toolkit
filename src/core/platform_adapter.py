@@ -655,22 +655,30 @@ class PlatformAdapter:
             if self.platform == "windows":
                 import win32api
                 import win32con
-                import win32gui
-                
-                def enum_display_monitors_proc(hMonitor, hdcMonitor, lprcMonitor, dwData):
-                    monitors = dwData
-                    info = win32api.GetMonitorInfo(hMonitor)
-                    monitors.append({
-                        "name": info["Device"],
-                        "work_area": info["Work"],
-                        "monitor_area": info["Monitor"],
-                        "primary": info["Flags"] & win32con.MONITORINFOF_PRIMARY != 0
-                    })
-                    return True
                 
                 monitors = []
-                win32gui.EnumDisplayMonitors(None, None, enum_display_monitors_proc, monitors)
-                return monitors
+                i = 0
+                while True:
+                    try:
+                        # 获取显示设备信息
+                        device = win32api.EnumDisplayDevices(None, i)
+                        if device.StateFlags & win32con.DISPLAY_DEVICE_ACTIVE:
+                            # 获取显示设置
+                            settings = win32api.EnumDisplaySettings(device.DeviceName, win32con.ENUM_CURRENT_SETTINGS)
+                            monitors.append({
+                                "name": device.DeviceName,
+                                "primary": bool(device.StateFlags & win32con.DISPLAY_DEVICE_PRIMARY_DEVICE),
+                                "resolution": f"{settings.PelsWidth}x{settings.PelsHeight}",
+                                "position": (settings.Position_x, settings.Position_y),
+                                "rotation": settings.DisplayOrientation
+                            })
+                        i += 1
+                    except:
+                        break
+                
+                if len(monitors) > 0:
+                    return monitors
+                return None
                 
             elif self.platform == "macos":
                 import subprocess
@@ -737,16 +745,14 @@ class PlatformAdapter:
             bool: 是否成功切换
         """
         try:
+            monitors = self.get_display_info()
+            if not monitors or len(monitors) < 2:
+                self.logger.error("未检测到多个显示器")
+                return False
+            
             if self.platform == "windows":
                 import win32api
                 import win32con
-                import win32gui
-                
-                # 获取当前显示器信息
-                monitors = self.get_display_info()
-                if not monitors or len(monitors) < 2:
-                    self.logger.error("未检测到多个显示器")
-                    return False
                 
                 # 获取主显示器和第二显示器
                 primary = next((m for m in monitors if m["primary"]), None)
@@ -755,20 +761,19 @@ class PlatformAdapter:
                 if not primary or not secondary:
                     self.logger.error("无法识别主显示器和第二显示器")
                     return False
-                
+                    
                 # 获取当前显示器设置
-                device = win32api.EnumDisplayDevices(secondary["name"], 0)
                 settings = win32api.EnumDisplaySettings(secondary["name"], win32con.ENUM_CURRENT_SETTINGS)
                 
                 # 切换模式
-                if settings.Position.x == 0 and settings.Position.y == 0:
+                if settings.Position_x == 0 and settings.Position_y == 0:
                     # 当前是镜像模式，切换到扩展模式
-                    settings.Position.x = primary["work_area"][2]  # 主显示器宽度
-                    settings.Position.y = 0
+                    settings.Position_x = int(primary["resolution"].split("x")[0])  # 主显示器宽度
+                    settings.Position_y = 0
                 else:
                     # 当前是扩展模式，切换到镜像模式
-                    settings.Position.x = 0
-                    settings.Position.y = 0
+                    settings.Position_x = 0
+                    settings.Position_y = 0
                 
                 # 应用设置
                 result = win32api.ChangeDisplaySettingsEx(
@@ -783,16 +788,10 @@ class PlatformAdapter:
                 else:
                     self.logger.error(f"显示器模式切换失败，错误代码: {result}")
                     return False
-                
+            
             elif self.platform == "macos":
                 import subprocess
                 try:
-                    # 获取当前显示器信息
-                    displays = self.get_display_info()
-                    if not displays or len(displays) < 2:
-                        self.logger.error("未检测到多个显示器")
-                        return False
-                    
                     # 使用displayplacer切换模式
                     cmd = ["displayplacer", "list"]
                     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -816,26 +815,20 @@ class PlatformAdapter:
                 except Exception as e:
                     self.logger.error(f"切换macOS显示器模式失败: {str(e)}")
                     return False
-                
+            
             elif self.platform == "linux":
                 import subprocess
                 try:
-                    # 获取当前显示器信息
-                    displays = self.get_display_info()
-                    if not displays or len(displays) < 2:
-                        self.logger.error("未检测到多个显示器")
-                        return False
-                    
                     # 获取主显示器和第二显示器
-                    primary = next((d for d in displays if d["primary"]), None)
-                    secondary = next((d for d in displays if not d["primary"]), None)
+                    primary = next((d for d in monitors if d["primary"]), None)
+                    secondary = next((d for d in monitors if not d["primary"]), None)
                     
                     if not primary or not secondary:
                         self.logger.error("无法识别主显示器和第二显示器")
                         return False
                     
                     # 检查当前模式
-                    if secondary["position"] and secondary["position"][0] == "0":
+                    if secondary["position"][0] == "0":
                         # 当前是镜像模式，切换到扩展模式
                         cmd = [
                             "xrandr",
@@ -865,7 +858,7 @@ class PlatformAdapter:
             else:
                 self.logger.error("当前平台不支持显示器模式切换")
                 return False
-                
+            
         except Exception as e:
             self.logger.error(f"切换显示器模式失败: {str(e)}")
             return False
@@ -877,32 +870,26 @@ class PlatformAdapter:
             bool: 是否成功旋转
         """
         try:
+            monitors = self.get_display_info()
+            if not monitors or len(monitors) < 2:
+                self.logger.error("未检测到多个显示器")
+                return False
+            
             if self.platform == "windows":
                 import win32api
                 import win32con
-                import win32gui
-                
-                # 获取当前显示器信息
-                monitors = self.get_display_info()
-                if not monitors or len(monitors) < 2:
-                    self.logger.error("未检测到多个显示器")
-                    return False
                 
                 # 获取第二显示器
                 secondary = next((m for m in monitors if not m["primary"]), None)
                 if not secondary:
                     self.logger.error("无法识别第二显示器")
                     return False
-                
+                    
                 # 获取当前显示器设置
-                device = win32api.EnumDisplayDevices(secondary["name"], 0)
                 settings = win32api.EnumDisplaySettings(secondary["name"], win32con.ENUM_CURRENT_SETTINGS)
                 
-                # 获取当前旋转角度
-                current_rotation = settings.DisplayOrientation
-                
                 # 计算新的旋转角度（顺时针旋转90度）
-                new_rotation = (current_rotation + 1) % 4
+                new_rotation = (secondary["rotation"] + 1) % 4
                 
                 # 设置新的旋转角度
                 settings.DisplayOrientation = new_rotation
@@ -920,100 +907,54 @@ class PlatformAdapter:
                 else:
                     self.logger.error(f"显示器旋转失败，错误代码: {result}")
                     return False
-                
+            
             elif self.platform == "macos":
                 import subprocess
                 try:
-                    # 获取当前显示器信息
-                    displays = self.get_display_info()
-                    if not displays or len(displays) < 2:
-                        self.logger.error("未检测到多个显示器")
-                        return False
-                    
                     # 获取第二显示器
-                    secondary = next((d for d in displays if not d["primary"]), None)
+                    secondary = next((d for d in monitors if not d["primary"]), None)
                     if not secondary:
                         self.logger.error("无法识别第二显示器")
                         return False
                     
-                    # 使用displayplacer获取当前旋转角度
-                    cmd = ["displayplacer", "list"]
+                    # 使用displayplacer旋转显示器
+                    cmd = ["displayplacer", f"rotate:{secondary['name']}:90"]
                     result = subprocess.run(cmd, capture_output=True, text=True)
                     if result.returncode == 0:
-                        # 解析当前配置
-                        current_config = result.stdout
-                        if "rotation:0" in current_config:
-                            new_rotation = 90
-                        elif "rotation:90" in current_config:
-                            new_rotation = 180
-                        elif "rotation:180" in current_config:
-                            new_rotation = 270
-                        else:
-                            new_rotation = 0
-                        
-                        # 应用新的旋转角度
-                        cmd = ["displayplacer", f"rotate:{secondary['name']}:{new_rotation}"]
-                        result = subprocess.run(cmd, capture_output=True, text=True)
-                        if result.returncode == 0:
-                            self.logger.info("显示器旋转成功")
-                            return True
-                        else:
-                            self.logger.error(f"显示器旋转失败: {result.stderr}")
-                            return False
+                        self.logger.info("显示器旋转成功")
+                        return True
+                    else:
+                        self.logger.error(f"显示器旋转失败: {result.stderr}")
+                        return False
                 except Exception as e:
                     self.logger.error(f"旋转macOS显示器失败: {str(e)}")
                     return False
-                
+            
             elif self.platform == "linux":
                 import subprocess
                 try:
-                    # 获取当前显示器信息
-                    displays = self.get_display_info()
-                    if not displays or len(displays) < 2:
-                        self.logger.error("未检测到多个显示器")
-                        return False
-                    
                     # 获取第二显示器
-                    secondary = next((d for d in displays if not d["primary"]), None)
+                    secondary = next((d for d in monitors if not d["primary"]), None)
                     if not secondary:
                         self.logger.error("无法识别第二显示器")
                         return False
                     
-                    # 使用xrandr获取当前旋转角度
-                    cmd = ["xrandr", "--query"]
+                    # 使用xrandr旋转显示器
+                    cmd = ["xrandr", "--output", secondary["name"], "--rotate", "right"]
                     result = subprocess.run(cmd, capture_output=True, text=True)
                     if result.returncode == 0:
-                        # 解析当前配置
-                        current_config = result.stdout
-                        if "normal" in current_config:
-                            new_rotation = "right"
-                        elif "right" in current_config:
-                            new_rotation = "inverted"
-                        elif "inverted" in current_config:
-                            new_rotation = "left"
-                        else:
-                            new_rotation = "normal"
-                        
-                        # 应用新的旋转角度
-                        cmd = [
-                            "xrandr",
-                            "--output", secondary["name"],
-                            "--rotate", new_rotation
-                        ]
-                        result = subprocess.run(cmd, capture_output=True, text=True)
-                        if result.returncode == 0:
-                            self.logger.info("显示器旋转成功")
-                            return True
-                        else:
-                            self.logger.error(f"显示器旋转失败: {result.stderr}")
-                            return False
+                        self.logger.info("显示器旋转成功")
+                        return True
+                    else:
+                        self.logger.error(f"显示器旋转失败: {result.stderr}")
+                        return False
                 except Exception as e:
                     self.logger.error(f"旋转Linux显示器失败: {str(e)}")
                     return False
             else:
                 self.logger.error("当前平台不支持显示器旋转")
                 return False
-                
+            
         except Exception as e:
             self.logger.error(f"旋转显示器失败: {str(e)}")
             return False
