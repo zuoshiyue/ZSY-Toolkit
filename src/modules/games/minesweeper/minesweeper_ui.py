@@ -36,7 +36,7 @@ class MinesweeperUI(ctk.CTkFrame):
         self.minesweeper_module = MinesweeperModule()
         
         # 单元格尺寸
-        self.cell_size = 30
+        self.cell_size = 40  # 增加默认单元格大小
         
         # 游戏状态
         self.game_time = 0
@@ -56,20 +56,20 @@ class MinesweeperUI(ctk.CTkFrame):
         """初始化UI界面"""
         # 主容器
         main_frame = ctk.CTkFrame(self)
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
+        main_frame.pack(fill="both", expand=True, padx=30, pady=30)
         
         # 顶部信息区域
         info_frame = ctk.CTkFrame(main_frame)
-        info_frame.pack(fill="x", pady=(0, 20))
+        info_frame.pack(fill="x", pady=(0, 30))
         
         # 左侧：难度选择
         difficulty_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
-        difficulty_frame.pack(side="left", padx=10)
+        difficulty_frame.pack(side="left", padx=20)
         
         ctk.CTkLabel(
             difficulty_frame,
             text="难度:",
-            font=("Helvetica", 14)
+            font=("Helvetica", 16)
         ).pack(side="left", padx=(0, 10))
         
         difficulty_var = ctk.StringVar(value="初级")
@@ -77,7 +77,8 @@ class MinesweeperUI(ctk.CTkFrame):
             difficulty_frame,
             values=["初级", "中级", "高级", "自定义"],
             variable=difficulty_var,
-            width=80,
+            width=100,
+            font=("Helvetica", 14),
             command=self._change_difficulty
         )
         self.difficulty_menu.pack(side="left")
@@ -92,13 +93,13 @@ class MinesweeperUI(ctk.CTkFrame):
         ctk.CTkLabel(
             mines_frame,
             text="地雷:",
-            font=("Helvetica", 14)
+            font=("Helvetica", 16)
         ).pack(side="left", padx=(0, 5))
         
         self.mines_label = ctk.CTkLabel(
             mines_frame,
             text="10",
-            font=("Helvetica", 14, "bold")
+            font=("Helvetica", 16, "bold")
         )
         self.mines_label.pack(side="left")
         
@@ -108,24 +109,26 @@ class MinesweeperUI(ctk.CTkFrame):
         ctk.CTkLabel(
             time_frame,
             text="时间:",
-            font=("Helvetica", 14)
+            font=("Helvetica", 16)
         ).pack(side="left", padx=(0, 5))
         
         self.timer_label = ctk.CTkLabel(
             time_frame,
             text="000",
-            font=("Helvetica", 14, "bold")
+            font=("Helvetica", 16, "bold")
         )
         self.timer_label.pack(side="left")
         
         # 右侧：新游戏按钮
         button_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
-        button_frame.pack(side="right", padx=10)
+        button_frame.pack(side="right", padx=20)
         
         self.new_game_button = ctk.CTkButton(
             button_frame,
             text="新游戏",
-            width=100,
+            width=120,
+            height=32,
+            font=("Helvetica", 14),
             command=self._new_game,
             fg_color="#2A9D8F"
         )
@@ -139,24 +142,34 @@ class MinesweeperUI(ctk.CTkFrame):
         self.scrollable_frame = ctk.CTkScrollableFrame(
             game_container,
             label_text="",
-            label_fg_color="transparent"
+            label_fg_color="transparent",
+            fg_color="transparent",
+            corner_radius=0,
+            border_width=1,
+            border_color="#808080",
+            scrollbar_button_color="#2A9D8F",
+            scrollbar_button_hover_color="#1E7167"
         )
-        self.scrollable_frame.pack(fill="both", expand=True)
+        self.scrollable_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
         # 创建游戏棋盘容器
-        self.board_frame = ctk.CTkFrame(self.scrollable_frame, fg_color="transparent")
-        self.board_frame.pack(expand=True, padx=10, pady=10)
+        self.board_frame = ctk.CTkFrame(
+            self.scrollable_frame,
+            fg_color="transparent",
+            corner_radius=0
+        )
+        self.board_frame.pack(expand=True, padx=20, pady=20)
         
         # 底部状态栏
-        status_frame = ctk.CTkFrame(main_frame, height=30)
+        status_frame = ctk.CTkFrame(main_frame, height=40)
         status_frame.pack(fill="x", pady=(20, 0))
         
         self.status_label = ctk.CTkLabel(
             status_frame,
             text="左键点击揭开格子，右键标记地雷",
-            font=("Helvetica", 12)
+            font=("Helvetica", 14)
         )
-        self.status_label.pack(pady=5)
+        self.status_label.pack(pady=8)
     
     def _create_board(self):
         """创建扫雷棋盘"""
@@ -170,9 +183,15 @@ class MinesweeperUI(ctk.CTkFrame):
         
         # 调整单元格大小，确保大棋盘也能显示
         if cols > 16:
-            self.cell_size = 25
+            self.cell_size = 35  # 大棋盘使用较小的单元格
         else:
-            self.cell_size = 30
+            self.cell_size = 40  # 小棋盘使用较大的单元格
+        
+        # 设置棋盘框架的最小尺寸
+        min_width = cols * (self.cell_size + 2) + 40  # 添加额外空间
+        min_height = rows * (self.cell_size + 2) + 40
+        
+        self.board_frame.configure(width=min_width, height=min_height)
         
         # 创建单元格
         self.cell_buttons = []
@@ -204,7 +223,7 @@ class MinesweeperUI(ctk.CTkFrame):
                     hover_color="#BBBBBB",
                     text_color="black",
                     corner_radius=0,
-                    font=("Helvetica", 12, "bold"),
+                    font=("Helvetica", 14, "bold"),  # 增加字体大小
                     border_width=1,
                     border_color="#808080"
                 )
@@ -214,6 +233,7 @@ class MinesweeperUI(ctk.CTkFrame):
                 cell_button.bind("<Button-1>", lambda e, r=i, c=j: self._on_left_click(r, c))
                 cell_button.bind("<Button-3>", lambda e, r=i, c=j: self._on_right_click(r, c))
                 cell_button.bind("<Button-2>", lambda e, r=i, c=j: self._on_middle_click(r, c))
+                cell_button.bind("<Double-Button-1>", lambda e, r=i, c=j: self._on_double_click(r, c))
                 
                 row_buttons.append(cell_button)
             self.cell_buttons.append(row_buttons)
@@ -289,6 +309,40 @@ class MinesweeperUI(ctk.CTkFrame):
         
         # 执行和弦操作
         success, revealed_cells, hit_mine = self.minesweeper_module.chord(row, col)
+        
+        if success:
+            # 更新界面
+            for r, c, value in revealed_cells:
+                self._update_cell_display(r, c, value)
+            
+            # 如果触发地雷，显示所有地雷
+            if hit_mine:
+                self._game_over(False)
+            
+            # 如果获胜，显示胜利
+            if self.minesweeper_module.game_state == GameState.WON:
+                self._game_over(True)
+    
+    def _on_double_click(self, row, col):
+        """响应双击事件
+        
+        Args:
+            row: 行坐标
+            col: 列坐标
+        """
+        # 如果游戏未开始，不响应
+        if self.minesweeper_module.game_state == GameState.NOT_STARTED:
+            return
+            
+        # 获取当前格子的状态
+        cell_state = self.minesweeper_module.get_cell_state(row, col)
+        
+        # 如果格子不是数字，不响应
+        if cell_state["value"] <= 0:
+            return
+            
+        # 执行双击操作
+        success, revealed_cells, hit_mine = self.minesweeper_module.double_click(row, col)
         
         if success:
             # 更新界面
@@ -711,32 +765,32 @@ class MinesweeperUI(ctk.CTkFrame):
         
         if difficulty == MinesweeperDifficulty.BEGINNER:
             # 初级难度 (9x9)
-            new_width = 1200
-            new_height = 800
+            new_width = 1600
+            new_height = 1000
         elif difficulty == MinesweeperDifficulty.INTERMEDIATE:
             # 中级难度 (16x16)
-            new_width = 1200
-            new_height = 800
+            new_width = 1800
+            new_height = 1100
         elif difficulty == MinesweeperDifficulty.EXPERT:
             # 高级难度 (16x30)
-            new_width = 1300
-            new_height = 800
+            new_width = 2000
+            new_height = 1100
         elif difficulty == MinesweeperDifficulty.CUSTOM:
             # 自定义难度，根据行列数计算
             rows = self.minesweeper_module.rows
             cols = self.minesweeper_module.cols
             
             # 基础大小
-            new_width = 1200 + (cols - 16) * 15
-            new_height = 800 + (rows - 16) * 15
+            new_width = 1800 + (cols - 16) * 30
+            new_height = 1100 + (rows - 16) * 30
             
             # 限制最大尺寸
-            new_width = min(new_width, 1500)
-            new_height = min(new_height, 900)
+            new_width = min(new_width, 2400)
+            new_height = min(new_height, 1400)
         else:
             # 默认大小
-            new_width = 1200
-            new_height = 800
+            new_width = 1800
+            new_height = 1100
         
         # 获取屏幕尺寸
         screen_width = game_space.winfo_screenwidth()

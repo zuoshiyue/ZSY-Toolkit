@@ -180,6 +180,7 @@ class PomodoroUI(ctk.CTkFrame):
         self.is_running = False
         self.start_button.configure(text="开始")
         self.remaining_time = self.work_time
+        self.status_label.configure(text="工作时间")
         self._update_display()
         
     def _update_timer(self):
@@ -218,16 +219,20 @@ class PomodoroUI(ctk.CTkFrame):
             
         self._update_display()
         
+        # 自动开始下一个阶段
+        self._start_timer()
+        
     def _play_notification(self):
         """播放提示音"""
         try:
-            if self.platform == "windows":
+            platform = self.platform_adapter.platform
+            if platform == "windows":
                 import winsound
                 winsound.Beep(1000, 1000)  # 频率1000Hz，持续1秒
-            elif self.platform == "macos":
+            elif platform == "macos":
                 import os
                 os.system("afplay /System/Library/Sounds/Glass.aiff")
-            elif self.platform == "linux":
+            elif platform == "linux":
                 import os
                 os.system("aplay /usr/share/sounds/freedesktop/stereo/complete.oga")
         except Exception as e:

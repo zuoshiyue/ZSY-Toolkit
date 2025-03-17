@@ -959,6 +959,99 @@ class PlatformAdapter:
             self.logger.error(f"旋转显示器失败: {str(e)}")
             return False
     
+    def get_volume(self):
+        """获取当前系统音量
+        
+        Returns:
+            int: 音量级别(0-100)，如果获取失败则返回None
+        """
+        try:
+            if self.platform == "windows":
+                try:
+                    from comtypes import CLSCTX_ALL
+                    from pycaw.pycaw import AudioUtilities, IAudioEndpointVolume
+                    devices = AudioUtilities.GetSpeakers()
+                    interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
+                    volume = interface.QueryInterface(IAudioEndpointVolume)
+                    # 从分贝值转换为百分比
+                    return int(volume.GetMasterVolumeLevelScalar() * 100)
+                except ImportError:
+                    self.logger.error("缺少pycaw库，无法获取Windows音量")
+                    return None
+                
+            elif self.platform == "macos":
+                try:
+                    import applescript
+                    script = 'output volume of (get volume settings)'
+                    result = applescript.AppleScript(script).run()
+                    return int(result)
+                except ImportError:
+                    self.logger.error("缺少applescript库，无法获取macOS音量")
+                    return None
+                
+            elif self.platform == "linux":
+                try:
+                    import pulsectl
+                    with pulsectl.Pulse('左拾月音量控制') as pulse:
+                        sinks = pulse.sink_list()
+                        if sinks:
+                            sink = sinks[0]  # 使用默认音频输出
+                            volume = pulse.volume_get_all_chans(sink)
+                            return int(volume * 100)
+                        else:
+                            self.logger.error("未找到音频输出设备")
+                            return None
+                except ImportError:
+                    self.logger.error("缺少pulsectl库，无法获取Linux音量")
+                    return None
+            else:
+                self.logger.error("当前平台不支持获取音量")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"获取音量失败: {str(e)}")
+            return None
+            
+    def open_volume_mixer(self) -> bool:
+        """打开系统音量合成器
+        
+        Returns:
+            bool: 是否成功打开
+        """
+        try:
+            if self.platform == "windows":
+                # Windows: 使用sndvol.exe打开音量合成器
+                subprocess.Popen("sndvol.exe")
+                return True
+            elif self.platform == "macos":
+                # macOS: 打开系统偏好设置的声音面板
+                subprocess.Popen(["open", "x-apple.systempreferences:com.apple.preference.sound"])
+                return True
+            elif self.platform == "linux":
+                # Linux: 尝试打开常见的音量控制程序
+                volume_controls = [
+                    "pavucontrol",  # PulseAudio音量控制
+                    "alsamixer",    # ALSA音量控制
+                    "gnome-control-center sound"  # GNOME声音设置
+                ]
+                
+                for control in volume_controls:
+                    try:
+                        subprocess.Popen(control.split())
+                        return True
+                    except FileNotFoundError:
+                        continue
+                
+                self.logger.error("未找到可用的音量控制程序")
+                return False
+            else:
+                self.logger.error(f"不支持的操作系统：{self.platform}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"打开音量合成器失败：{str(e)}")
+            return False
+    
     def handle_command(self, command, params=None):
         """处理系统命令
         
@@ -994,6 +1087,10 @@ class PlatformAdapter:
                 return self.toggle_display_mode()
             elif command == "rotate_display":
                 return self.rotate_display()
+            elif command == "get_volume":
+                return self.get_volume()
+            elif command == "open_volume_mixer":
+                return self.open_volume_mixer()
             else:
                 self.logger.error(f"未知的命令: {command}")
                 return False

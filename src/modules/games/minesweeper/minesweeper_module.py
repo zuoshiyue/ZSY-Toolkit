@@ -395,6 +395,60 @@ class MinesweeperModule:
         
         return False, [], False
     
+    def double_click(self, row: int, col: int) -> Tuple[bool, List[Tuple[int, int, int]], bool]:
+        """双击数字格子，如果周围已标记的地雷数量等于数字，则自动点击周围未标记的格子
+        
+        Args:
+            row: 行坐标
+            col: 列坐标
+            
+        Returns:
+            Tuple[bool, List[Tuple[int, int, int]], bool]:
+                - 是否成功执行双击操作
+                - 揭开的单元格列表 [(row, col, value), ...]
+                - 是否触发地雷
+        """
+        # 验证坐标是否有效
+        if not self._is_valid_cell(row, col):
+            return False, [], False
+        
+        # 检查是否是已揭开的数字单元格
+        if self.cell_states[row][col] != CellState.REVEALED or self.board[row][col] <= 0:
+            return False, [], False
+        
+        # 统计周围的旗子数量
+        flag_count = 0
+        for dr in [-1, 0, 1]:
+            for dc in [-1, 0, 1]:
+                if dr == 0 and dc == 0:
+                    continue
+                
+                r, c = row + dr, col + dc
+                if self._is_valid_cell(r, c) and self.cell_states[r][c] == CellState.FLAGGED:
+                    flag_count += 1
+        
+        # 如果旗子数量与数字相同，揭开周围未标记的单元格
+        if flag_count == self.board[row][col]:
+            revealed_cells = []
+            hit_mine = False
+            
+            for dr in [-1, 0, 1]:
+                for dc in [-1, 0, 1]:
+                    if dr == 0 and dc == 0:
+                        continue
+                    
+                    r, c = row + dr, col + dc
+                    if self._is_valid_cell(r, c) and (self.cell_states[r][c] == CellState.COVERED or self.cell_states[r][c] == CellState.QUESTION):
+                        success, cells, mine_hit = self.reveal_cell(r, c)
+                        if success:
+                            revealed_cells.extend(cells)
+                            if mine_hit:
+                                hit_mine = True
+            
+            return True, revealed_cells, hit_mine
+        
+        return False, [], False
+    
     def _is_valid_cell(self, row: int, col: int) -> bool:
         """检查单元格坐标是否有效
         
