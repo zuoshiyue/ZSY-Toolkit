@@ -38,8 +38,8 @@ class MainWindow:
         # 创建主窗口
         self.root = ctk.CTk()
         self.root.title("左拾月 - 个人助手工具")
-        self.root.geometry("900x600")
-        self.root.minsize(800, 500)
+        self.root.geometry("1200x800")
+        self.root.minsize(1000, 700)
         
         # 设置图标
         self._setup_icon()
@@ -382,6 +382,10 @@ class MainWindow:
             text=f"确定要{action_name}吗？\n输入延迟时间（秒），取消请留空:",
             title=f"确认{action_name}"
         )
+        
+        # 使对话框居中于主窗口
+        self._center_dialog(dialog, 400, 200)
+        
         result = dialog.get_input()
         
         if result:
@@ -415,6 +419,10 @@ class MainWindow:
                 text=f"选择定时操作:\n\n时间: {time_text}",
                 title="定时任务设置"
             )
+            
+            # 使对话框居中于主窗口
+            self._center_dialog(dialog, 300, 200)
+            
             # 添加选项按钮
             shutdown_btn = ctk.CTkButton(
                 dialog,
@@ -453,6 +461,30 @@ class MainWindow:
         
         self.app_manager.handle_system_command(action, {"delay": seconds})
         self.status_label.configure(text=f"已设置{seconds}秒后{action_name}")
+    
+    def _center_dialog(self, dialog, width, height):
+        """使对话框居中于主窗口
+        
+        Args:
+            dialog: 对话框
+            width: 对话框宽度
+            height: 对话框高度
+        """
+        # 等待主窗口完全加载
+        self.root.update_idletasks()
+        
+        # 获取主窗口位置和大小
+        main_x = self.root.winfo_x()
+        main_y = self.root.winfo_y()
+        main_width = self.root.winfo_width()
+        main_height = self.root.winfo_height()
+        
+        # 计算对话框应该出现的位置（相对于主窗口居中）
+        x = main_x + (main_width - width) // 2
+        y = main_y + (main_height - height) // 2
+        
+        # 设置对话框位置
+        dialog.geometry(f"{width}x{height}+{x}+{y}")
     
     def _on_close(self):
         """窗口关闭事件处理"""

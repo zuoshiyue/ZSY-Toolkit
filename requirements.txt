@@ -3,7 +3,7 @@ pillow==10.0.0
 pystray==0.19.4
 pyautogui==0.9.54
 psutil==5.9.5
-SQLite3==2.6.0
+# SQLite3==2.6.0  # 注释掉，因为这是 Python 标准库的一部分
 tinydb==4.8.0
 pycaw==20230322; platform_system == "Windows"
 pywin32==306; platform_system == "Windows"

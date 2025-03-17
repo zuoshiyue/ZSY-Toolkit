@@ -1,0 +1,183 @@
+# Python 编译文件
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C 扩展
+*.so
+
+# 发行版 / 打包
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 单元测试 / 覆盖报告
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# 虚拟环境
+venv/
+env/
+ENV/
+.env/
+.venv/
+env.bak/
+venv.bak/
+
+# 日志文件
+*.log
+logs/
+logs/*.log
+app.log
+error.log
+debug.log
+logs/app.log
+
+# 本地数据和配置
+data/
+config.ini
+*.db
+*.sqlite3
+
+# 用户数据文件
+user_data/
+app_data/
+
+# IDE 特定文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+.project
+.pydevproject
+.settings/
+
+# 专用于左拾月工具包的忽略项
+# 临时文件
+tmp/
+temp/
+
+# 游戏保存文件
+src/modules/games/sudoku/saves/
+src/modules/games/minesweeper/saves/
+
+# 应用程序数据目录
+app_data/
+
+# macOS 特定文件
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Windows 特定文件
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# 备份文件
+*.bak
+*.backup
+*~
+
+# 项目特定忽略项
+# 应用程序缓存
+__pycache__/
+src/__pycache__/
+src/**/__pycache__/
+src/modules/__pycache__/
+src/modules/**/__pycache__/
+src/ui/__pycache__/
+src/ui/**/__pycache__/
+src/core/__pycache__/
+src/core/**/__pycache__/
+
+# 本地开发配置
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# 本地测试和调试文件
+testing/
+debug/
+*.test.py
+*.debug.py
+
+# 编译的可执行文件
+*.exe
+*.bin
+*.app
+*.dmg
+*.msi
+*.pkg
+
+# 自动生成的文件
+generated/
+output/
+build_output/
+
+# 用户特定设置文件
+settings.json
+config.local.ini
+user_config.ini
+
+# 左拾月特有文件
+# 模块临时数据
+src/modules/todo/data/
+src/modules/pomodoro/data/
+src/modules/games/data/
+
+# 打包目录
+dist/
+release/
+installer/
+
+# 缓存文件夹
+.cache/
+.cached/
+.pytest_cache/
+
+# 特定平台临时目录
+__MACOSX/
+.Trash/
+
+# 本地存储文件
+*.pickle
+*.joblib
+*.npy
+*.h5
+*.hdf5
+
+# 临时图片文件
+*.tmp.png
+*.tmp.jpg
+*.tmp.gif 
