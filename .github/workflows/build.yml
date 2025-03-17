@@ -13,10 +13,10 @@ jobs:
   build-windows:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: 设置 Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
         cache: 'pip'
@@ -36,7 +36,7 @@ jobs:
         powershell Compress-Archive -Path "dist/左拾月/*" -DestinationPath "左拾月-Windows.zip"
     
     - name: 上传构建结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: 左拾月-Windows
         path: 左拾月-Windows.zip
@@ -44,10 +44,10 @@ jobs:
   build-macos:
     runs-on: macos-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: 设置 Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
         cache: 'pip'
@@ -67,7 +67,7 @@ jobs:
         hdiutil create -volname "左拾月" -srcfolder "dist/左拾月" -ov -format UDBZ "左拾月-macOS.dmg"
     
     - name: 上传构建结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: 左拾月-macOS
         path: 左拾月-macOS.dmg
@@ -75,10 +75,10 @@ jobs:
   build-linux:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: 设置 Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.9'
         cache: 'pip'
@@ -100,7 +100,7 @@ jobs:
         tar -czvf 左拾月-Linux.tar.gz -C dist 左拾月
     
     - name: 上传构建结果
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: 左拾月-Linux
         path: 左拾月-Linux.tar.gz
@@ -111,10 +111,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: 下载所有构建结果
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v4
     
     - name: 创建发布
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v2
       with:
         files: |
           左拾月-Windows/左拾月-Windows.zip
