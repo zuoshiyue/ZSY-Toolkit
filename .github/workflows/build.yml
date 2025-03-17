@@ -1,0 +1,124 @@
+name: 左拾月应用构建
+
+on:
+  push:
+    branches: [ main, master ]
+    tags:
+      - 'v*' # 发布版本时触发，格式如 v1.0.0
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 设置 Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+    
+    - name: 构建应用程序
+      run: |
+        pyinstaller --noconfirm --name="左拾月" --windowed --icon=src/ui/assets/icon.ico --add-data="src/ui/assets;src/ui/assets" run.py
+    
+    - name: 压缩安装包
+      run: |
+        powershell Compress-Archive -Path "dist/左拾月/*" -DestinationPath "左拾月-Windows.zip"
+    
+    - name: 上传构建结果
+      uses: actions/upload-artifact@v4
+      with:
+        name: 左拾月-Windows
+        path: 左拾月-Windows.zip
+
+  build-macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 设置 Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: 安装依赖
+      run: |
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+    
+    - name: 构建应用程序
+      run: |
+        pyinstaller --noconfirm --name="左拾月" --windowed --icon=src/ui/assets/icon.icns --add-data="src/ui/assets:src/ui/assets" run.py
+    
+    - name: 创建 DMG
+      run: |
+        hdiutil create -volname "左拾月" -srcfolder "dist/左拾月" -ov -format UDBZ "左拾月-macOS.dmg"
+    
+    - name: 上传构建结果
+      uses: actions/upload-artifact@v4
+      with:
+        name: 左拾月-macOS
+        path: 左拾月-macOS.dmg
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: 设置 Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+        cache: 'pip'
+    
+    - name: 安装依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y python3-dev python3-tk
+        python -m pip install --upgrade pip
+        pip install pyinstaller
+        pip install -r requirements.txt
+    
+    - name: 构建应用程序
+      run: |
+        pyinstaller --noconfirm --name="左拾月" --windowed --add-data="src/ui/assets:src/ui/assets" run.py
+    
+    - name: 打包成 tar.gz
+      run: |
+        tar -czvf 左拾月-Linux.tar.gz -C dist 左拾月
+    
+    - name: 上传构建结果
+      uses: actions/upload-artifact@v4
+      with:
+        name: 左拾月-Linux
+        path: 左拾月-Linux.tar.gz
+        
+  create-release:
+    needs: [build-windows, build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+    - name: 下载所有构建结果
+      uses: actions/download-artifact@v4
+    
+    - name: 创建发布
+      uses: softprops/action-gh-release@v2
+      with:
+        files: |
+          左拾月-Windows/左拾月-Windows.zip
+          左拾月-macOS/左拾月-macOS.dmg
+          左拾月-Linux/左拾月-Linux.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 

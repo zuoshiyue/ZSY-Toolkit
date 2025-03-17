@@ -52,6 +52,10 @@ class QuadrantView(ctk.CTkFrame):
         self.task_frame = ctk.CTkScrollableFrame(self)
         self.task_frame.pack(fill="both", expand=True, padx=5, pady=5)
         
+        # 设置最小高度，确保滚动区域有足够的空间
+        self.configure(height=300)  # 设置象限视图的最小高度
+        self.task_frame.configure(height=250)  # 设置滚动区域的最小高度
+        
         # 刷新任务列表
         self.refresh_tasks()
     
@@ -169,10 +173,13 @@ class TaskDialog(ctk.CTkToplevel):
         
         # 设置对话框属性
         self.title("编辑任务" if task else "新建任务")
-        self.geometry("500x400")
-        self.resizable(False, False)
+        self.geometry("500x450")  # 增加高度
+        self.resizable(True, True)  # 允许调整大小
         self.lift()  # 置于顶层
         self.grab_set()  # 模态对话框
+        
+        # 设置最小尺寸
+        self.minsize(500, 450)
         
         # 基本信息区域
         info_frame = ctk.CTkFrame(self)
@@ -199,6 +206,26 @@ class TaskDialog(ctk.CTkToplevel):
         date_frame = ctk.CTkFrame(info_frame, fg_color="transparent")
         date_frame.grid(row=2, column=1, sticky="w", padx=5, pady=5)
         
+        # 添加是否设置截止日期的复选框
+        self.has_due_date = ctk.BooleanVar(value=task.due_date is not None if task else False)
+        
+        def toggle_due_date():
+            # 启用或禁用日期选择器
+            state = "normal" if self.has_due_date.get() else "disabled"
+            year_dropdown.configure(state=state)
+            month_dropdown.configure(state=state)
+            day_dropdown.configure(state=state)
+        
+        due_date_checkbox = ctk.CTkCheckBox(
+            date_frame,
+            text="设置截止日期",
+            variable=self.has_due_date,
+            command=toggle_due_date,
+            onvalue=True,
+            offvalue=False
+        )
+        due_date_checkbox.pack(side="top", anchor="w", pady=(0, 5))
+        
         # 简化版日期选择器 (实际应用中可能需要更复杂的日期选择控件)
         current_date = datetime.now().date()
         if task and task.due_date:
@@ -212,16 +239,22 @@ class TaskDialog(ctk.CTkToplevel):
         month_options = [str(month) for month in range(1, 13)]
         day_options = [str(day) for day in range(1, 32)]
         
-        year_dropdown = ctk.CTkOptionMenu(date_frame, values=year_options, variable=self.year_var, width=70)
-        month_dropdown = ctk.CTkOptionMenu(date_frame, values=month_options, variable=self.month_var, width=60)
-        day_dropdown = ctk.CTkOptionMenu(date_frame, values=day_options, variable=self.day_var, width=60)
+        date_selector_frame = ctk.CTkFrame(date_frame, fg_color="transparent")
+        date_selector_frame.pack(side="top", fill="x")
+        
+        year_dropdown = ctk.CTkOptionMenu(date_selector_frame, values=year_options, variable=self.year_var, width=70)
+        month_dropdown = ctk.CTkOptionMenu(date_selector_frame, values=month_options, variable=self.month_var, width=60)
+        day_dropdown = ctk.CTkOptionMenu(date_selector_frame, values=day_options, variable=self.day_var, width=60)
         
         year_dropdown.pack(side="left", padx=(0, 5))
-        ctk.CTkLabel(date_frame, text="年").pack(side="left", padx=(0, 5))
+        ctk.CTkLabel(date_selector_frame, text="年").pack(side="left", padx=(0, 5))
         month_dropdown.pack(side="left", padx=(0, 5))
-        ctk.CTkLabel(date_frame, text="月").pack(side="left", padx=(0, 5))
+        ctk.CTkLabel(date_selector_frame, text="月").pack(side="left", padx=(0, 5))
         day_dropdown.pack(side="left", padx=(0, 5))
-        ctk.CTkLabel(date_frame, text="日").pack(side="left")
+        ctk.CTkLabel(date_selector_frame, text="日").pack(side="left")
+        
+        # 初始化日期选择器状态
+        toggle_due_date()
         
         # 优先级
         ctk.CTkLabel(info_frame, text="优先级:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
@@ -326,14 +359,15 @@ class TaskDialog(ctk.CTkToplevel):
         try:
             # 获取截止日期
             due_date = None
-            try:
-                year = int(self.year_var.get())
-                month = int(self.month_var.get())
-                day = int(self.day_var.get())
-                due_date = datetime(year, month, day)
-            except (ValueError, AttributeError):
-                # 日期无效，忽略
-                pass
+            if self.has_due_date.get():  # 只有当复选框被选中时才设置截止日期
+                try:
+                    year = int(self.year_var.get())
+                    month = int(self.month_var.get())
+                    day = int(self.day_var.get())
+                    due_date = datetime(year, month, day)
+                except (ValueError, AttributeError):
+                    # 日期无效，忽略
+                    pass
                 
             # 获取标签
             tags_text = self.tags_entry.get().strip()
@@ -398,6 +432,113 @@ class TaskDialog(ctk.CTkToplevel):
             # 关闭对话框
             self.destroy()
 
+class ImportDialog(ctk.CTkToplevel):
+    """任务导入对话框"""
+    def __init__(self, parent, **kwargs):
+        super().__init__(parent, **kwargs)
+        
+        # 设置对话框属性
+        self.title("从Markdown导入任务")
+        self.geometry("600x500")  # 更大的对话框
+        self.resizable(True, True)
+        self.lift()  # 置于顶层
+        self.grab_set()  # 模态对话框
+        
+        # 设置最小尺寸
+        self.minsize(600, 500)
+        
+        # 结果变量
+        self.result = None
+        
+        # 创建UI
+        self._init_ui()
+        
+    def _init_ui(self):
+        """初始化UI"""
+        # 说明标签
+        header_label = ctk.CTkLabel(
+            self,
+            text="将Markdown格式的任务粘贴到下方框中:",
+            font=("Helvetica", 14)
+        )
+        header_label.pack(padx=20, pady=(20, 5), anchor="w")
+        
+        # 示例按钮
+        example_button = ctk.CTkButton(
+            self,
+            text="显示示例",
+            command=self._show_example,
+            width=100
+        )
+        example_button.pack(padx=20, pady=(0, 10), anchor="w")
+        
+        # 文本输入框
+        self.text_input = ctk.CTkTextbox(
+            self,
+            width=560,
+            height=350,
+            font=("Helvetica", 12)
+        )
+        self.text_input.pack(padx=20, pady=10, fill="both", expand=True)
+        
+        # 按钮区域
+        button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        button_frame.pack(fill="x", padx=20, pady=20)
+        
+        cancel_button = ctk.CTkButton(
+            button_frame,
+            text="取消",
+            command=self.destroy,
+            fg_color="#E76F51",
+            width=100
+        )
+        cancel_button.pack(side="left", padx=5)
+        
+        import_button = ctk.CTkButton(
+            button_frame,
+            text="导入",
+            command=self._on_import,
+            fg_color="#2A9D8F",
+            width=100
+        )
+        import_button.pack(side="right", padx=5)
+    
+    def _show_example(self):
+        """显示示例内容"""
+        example = """# 左拾月任务列表
+
+## 重要且紧急
+- [ ] 完成项目报告
+  - 描述: 需要在周五前完成季度项目总结报告
+  - 标签: 工作, 文档
+  - 截止: 2025-03-20
+
+## 重要不紧急
+- [ ] 学习Python高级编程
+  - 描述: 提升编程技能，学习装饰器和元类
+  - 标签: 学习, 编程
+
+## 不重要紧急
+- [ ] 回复邮件
+  - 截止: 2025-03-18
+
+## 不重要不紧急
+- [ ] 整理书架
+- [ ] 看电影
+"""
+        self.text_input.delete("1.0", "end")
+        self.text_input.insert("1.0", example)
+    
+    def _on_import(self):
+        """导入按钮点击事件"""
+        self.result = self.text_input.get("1.0", "end-1c")
+        self.destroy()
+    
+    def get_input(self) -> Optional[str]:
+        """获取输入内容"""
+        self.wait_window()  # 等待窗口关闭
+        return self.result
+
 class TodoUI(ctk.CTkFrame):
     """Todo模块主UI类"""
     def __init__(self, master, config_manager, **kwargs):
@@ -414,6 +555,9 @@ class TodoUI(ctk.CTkFrame):
     
     def _init_ui(self):
         """初始化UI布局"""
+        # 设置最小尺寸，确保窗口有足够的空间
+        self.configure(width=800, height=600)
+        
         # 顶部工具栏
         toolbar = ctk.CTkFrame(self, height=40)
         toolbar.pack(fill="x", padx=10, pady=(10, 5))
@@ -460,6 +604,9 @@ class TodoUI(ctk.CTkFrame):
         quadrants_frame.grid_columnconfigure(1, weight=1)
         quadrants_frame.grid_rowconfigure(0, weight=1)
         quadrants_frame.grid_rowconfigure(1, weight=1)
+        
+        # 确保四象限框架有足够的高度
+        quadrants_frame.configure(height=500)
         
         # 象限1：重要且紧急
         self.quadrant1 = QuadrantView(
@@ -540,28 +687,53 @@ class TodoUI(ctk.CTkFrame):
                 f.write(md_content)
                 
             # 成功提示
-            ctk.CTkMessagebox.show_info(
-                title="导出成功",
-                message=f"任务已导出到:\n{file_path}"
-            )
+            success_dialog = ctk.CTkToplevel(self)
+            success_dialog.title("导出成功")
+            success_dialog.geometry("400x150")
+            success_dialog.resizable(False, False)
+            success_dialog.lift()
+            success_dialog.grab_set()
+            
+            ctk.CTkLabel(
+                success_dialog,
+                text=f"任务已导出到:\n{file_path}",
+                font=("Helvetica", 12)
+            ).pack(padx=20, pady=20)
+            
+            ctk.CTkButton(
+                success_dialog,
+                text="确定",
+                command=success_dialog.destroy,
+                width=80
+            ).pack(pady=10)
             
         except Exception as e:
             self.logger.error(f"导出任务失败: {str(e)}", exc_info=True)
             # 错误提示
-            ctk.CTkMessagebox.show_error(
-                title="导出失败",
-                message=f"导出任务时发生错误:\n{str(e)}"
-            )
+            error_dialog = ctk.CTkToplevel(self)
+            error_dialog.title("导出失败")
+            error_dialog.geometry("400x200")
+            error_dialog.resizable(False, False)
+            error_dialog.lift()
+            error_dialog.grab_set()
+            
+            ctk.CTkLabel(
+                error_dialog,
+                text=f"导出任务时发生错误:\n{str(e)}",
+                font=("Helvetica", 12)
+            ).pack(padx=20, pady=20)
+            
+            ctk.CTkButton(
+                error_dialog,
+                text="确定",
+                command=error_dialog.destroy,
+                width=80
+            ).pack(pady=10)
     
     def _import_tasks(self):
         """导入任务"""
-        # 简单的导入对话框 (实际应用可能需要使用系统的文件对话框)
-        # 这里简化为直接从剪贴板导入
-        
-        import_dialog = ctk.CTkInputDialog(
-            text="将Markdown格式的任务粘贴到下方框中:", 
-            title="从Markdown导入"
-        )
+        # 使用自定义导入对话框
+        import_dialog = ImportDialog(self)
         md_content = import_dialog.get_input()
         
         if md_content:
@@ -572,18 +744,49 @@ class TodoUI(ctk.CTkFrame):
                 self._refresh_all()
                 
                 # 成功提示
-                ctk.CTkMessagebox.show_info(
-                    title="导入结果",
-                    message=f"成功导入 {added} 个任务\n导入失败 {failed} 个任务"
-                )
+                # 使用普通的消息框替代 CTkMessagebox
+                success_dialog = ctk.CTkToplevel(self)
+                success_dialog.title("导入结果")
+                success_dialog.geometry("300x150")
+                success_dialog.resizable(False, False)
+                success_dialog.lift()
+                success_dialog.grab_set()
+                
+                ctk.CTkLabel(
+                    success_dialog,
+                    text=f"成功导入 {added} 个任务\n导入失败 {failed} 个任务",
+                    font=("Helvetica", 12)
+                ).pack(padx=20, pady=20)
+                
+                ctk.CTkButton(
+                    success_dialog,
+                    text="确定",
+                    command=success_dialog.destroy,
+                    width=80
+                ).pack(pady=10)
                 
             except Exception as e:
                 self.logger.error(f"导入任务失败: {str(e)}", exc_info=True)
                 # 错误提示
-                ctk.CTkMessagebox.show_error(
-                    title="导入失败",
-                    message=f"导入任务时发生错误:\n{str(e)}"
-                )
+                error_dialog = ctk.CTkToplevel(self)
+                error_dialog.title("导入失败")
+                error_dialog.geometry("400x200")
+                error_dialog.resizable(False, False)
+                error_dialog.lift()
+                error_dialog.grab_set()
+                
+                ctk.CTkLabel(
+                    error_dialog,
+                    text=f"导入任务时发生错误:\n{str(e)}",
+                    font=("Helvetica", 12)
+                ).pack(padx=20, pady=20)
+                
+                ctk.CTkButton(
+                    error_dialog,
+                    text="确定",
+                    command=error_dialog.destroy,
+                    width=80
+                ).pack(pady=10)
     
     def on_close(self):
         """关闭时调用"""
