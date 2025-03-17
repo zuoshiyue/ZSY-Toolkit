@@ -374,6 +374,650 @@ class PlatformAdapter:
             self.logger.error(f"启动应用程序失败: {app_path}, 错误: {str(e)}")
             return False
             
+    def get_system_info(self):
+        """获取系统信息
+        
+        Returns:
+            dict: 包含系统信息的字典
+        """
+        try:
+            info = {
+                "platform": self.get_platform_name(),
+                "version": platform.version(),
+                "machine": platform.machine(),
+                "processor": platform.processor(),
+                "memory": self._get_memory_info(),
+                "disk": self._get_disk_info(),
+                "cpu": self._get_cpu_info(),
+                "network": self._get_network_info()
+            }
+            return info
+        except Exception as e:
+            self.logger.error(f"获取系统信息失败: {str(e)}")
+            return None
+    
+    def _get_memory_info(self):
+        """获取内存信息"""
+        try:
+            if self.platform == "windows":
+                import psutil
+                memory = psutil.virtual_memory()
+                return {
+                    "total": memory.total,
+                    "available": memory.available,
+                    "used": memory.used,
+                    "percent": memory.percent
+                }
+            elif self.platform == "macos":
+                import psutil
+                memory = psutil.virtual_memory()
+                return {
+                    "total": memory.total,
+                    "available": memory.available,
+                    "used": memory.used,
+                    "percent": memory.percent
+                }
+            elif self.platform == "linux":
+                import psutil
+                memory = psutil.virtual_memory()
+                return {
+                    "total": memory.total,
+                    "available": memory.available,
+                    "used": memory.used,
+                    "percent": memory.percent
+                }
+            else:
+                return None
+        except Exception as e:
+            self.logger.error(f"获取内存信息失败: {str(e)}")
+            return None
+    
+    def _get_disk_info(self):
+        """获取磁盘信息"""
+        try:
+            if self.platform == "windows":
+                import psutil
+                disks = []
+                for partition in psutil.disk_partitions():
+                    try:
+                        usage = psutil.disk_usage(partition.mountpoint)
+                        disks.append({
+                            "device": partition.device,
+                            "mountpoint": partition.mountpoint,
+                            "fstype": partition.fstype,
+                            "total": usage.total,
+                            "used": usage.used,
+                            "free": usage.free,
+                            "percent": usage.percent
+                        })
+                    except Exception:
+                        continue
+                return disks
+            elif self.platform == "macos":
+                import psutil
+                disks = []
+                for partition in psutil.disk_partitions():
+                    try:
+                        usage = psutil.disk_usage(partition.mountpoint)
+                        disks.append({
+                            "device": partition.device,
+                            "mountpoint": partition.mountpoint,
+                            "fstype": partition.fstype,
+                            "total": usage.total,
+                            "used": usage.used,
+                            "free": usage.free,
+                            "percent": usage.percent
+                        })
+                    except Exception:
+                        continue
+                return disks
+            elif self.platform == "linux":
+                import psutil
+                disks = []
+                for partition in psutil.disk_partitions():
+                    try:
+                        usage = psutil.disk_usage(partition.mountpoint)
+                        disks.append({
+                            "device": partition.device,
+                            "mountpoint": partition.mountpoint,
+                            "fstype": partition.fstype,
+                            "total": usage.total,
+                            "used": usage.used,
+                            "free": usage.free,
+                            "percent": usage.percent
+                        })
+                    except Exception:
+                        continue
+                return disks
+            else:
+                return None
+        except Exception as e:
+            self.logger.error(f"获取磁盘信息失败: {str(e)}")
+            return None
+    
+    def _get_cpu_info(self):
+        """获取CPU信息"""
+        try:
+            if self.platform == "windows":
+                import psutil
+                cpu_percent = psutil.cpu_percent(interval=1)
+                cpu_count = psutil.cpu_count()
+                cpu_freq = psutil.cpu_freq()
+                return {
+                    "percent": cpu_percent,
+                    "count": cpu_count,
+                    "frequency": {
+                        "current": cpu_freq.current,
+                        "min": cpu_freq.min,
+                        "max": cpu_freq.max
+                    } if cpu_freq else None
+                }
+            elif self.platform == "macos":
+                import psutil
+                cpu_percent = psutil.cpu_percent(interval=1)
+                cpu_count = psutil.cpu_count()
+                cpu_freq = psutil.cpu_freq()
+                return {
+                    "percent": cpu_percent,
+                    "count": cpu_count,
+                    "frequency": {
+                        "current": cpu_freq.current,
+                        "min": cpu_freq.min,
+                        "max": cpu_freq.max
+                    } if cpu_freq else None
+                }
+            elif self.platform == "linux":
+                import psutil
+                cpu_percent = psutil.cpu_percent(interval=1)
+                cpu_count = psutil.cpu_count()
+                cpu_freq = psutil.cpu_freq()
+                return {
+                    "percent": cpu_percent,
+                    "count": cpu_count,
+                    "frequency": {
+                        "current": cpu_freq.current,
+                        "min": cpu_freq.min,
+                        "max": cpu_freq.max
+                    } if cpu_freq else None
+                }
+            else:
+                return None
+        except Exception as e:
+            self.logger.error(f"获取CPU信息失败: {str(e)}")
+            return None
+    
+    def _get_network_info(self):
+        """获取网络信息"""
+        try:
+            if self.platform == "windows":
+                import psutil
+                net_io = psutil.net_io_counters()
+                net_if = psutil.net_if_stats()
+                net_addrs = psutil.net_if_addrs()
+                return {
+                    "bytes_sent": net_io.bytes_sent,
+                    "bytes_recv": net_io.bytes_recv,
+                    "packets_sent": net_io.packets_sent,
+                    "packets_recv": net_io.packets_recv,
+                    "interfaces": {
+                        iface: {
+                            "stats": {
+                                "isup": stats.isup,
+                                "speed": stats.speed,
+                                "mtu": stats.mtu
+                            },
+                            "addresses": [
+                                {
+                                    "family": addr.family,
+                                    "address": addr.address,
+                                    "netmask": addr.netmask,
+                                    "broadcast": addr.broadcast
+                                }
+                                for addr in net_addrs.get(iface, [])
+                            ]
+                        }
+                        for iface, stats in net_if.items()
+                    }
+                }
+            elif self.platform == "macos":
+                import psutil
+                net_io = psutil.net_io_counters()
+                net_if = psutil.net_if_stats()
+                net_addrs = psutil.net_if_addrs()
+                return {
+                    "bytes_sent": net_io.bytes_sent,
+                    "bytes_recv": net_io.bytes_recv,
+                    "packets_sent": net_io.packets_sent,
+                    "packets_recv": net_io.packets_recv,
+                    "interfaces": {
+                        iface: {
+                            "stats": {
+                                "isup": stats.isup,
+                                "speed": stats.speed,
+                                "mtu": stats.mtu
+                            },
+                            "addresses": [
+                                {
+                                    "family": addr.family,
+                                    "address": addr.address,
+                                    "netmask": addr.netmask,
+                                    "broadcast": addr.broadcast
+                                }
+                                for addr in net_addrs.get(iface, [])
+                            ]
+                        }
+                        for iface, stats in net_if.items()
+                    }
+                }
+            elif self.platform == "linux":
+                import psutil
+                net_io = psutil.net_io_counters()
+                net_if = psutil.net_if_stats()
+                net_addrs = psutil.net_if_addrs()
+                return {
+                    "bytes_sent": net_io.bytes_sent,
+                    "bytes_recv": net_io.bytes_recv,
+                    "packets_sent": net_io.packets_sent,
+                    "packets_recv": net_io.packets_recv,
+                    "interfaces": {
+                        iface: {
+                            "stats": {
+                                "isup": stats.isup,
+                                "speed": stats.speed,
+                                "mtu": stats.mtu
+                            },
+                            "addresses": [
+                                {
+                                    "family": addr.family,
+                                    "address": addr.address,
+                                    "netmask": addr.netmask,
+                                    "broadcast": addr.broadcast
+                                }
+                                for addr in net_addrs.get(iface, [])
+                            ]
+                        }
+                        for iface, stats in net_if.items()
+                    }
+                }
+            else:
+                return None
+        except Exception as e:
+            self.logger.error(f"获取网络信息失败: {str(e)}")
+            return None
+    
+    def get_display_info(self):
+        """获取显示器信息
+        
+        Returns:
+            list: 显示器信息列表，每个元素包含显示器名称、分辨率、位置等信息
+        """
+        try:
+            if self.platform == "windows":
+                import win32api
+                import win32con
+                import win32gui
+                
+                def enum_display_monitors_proc(hMonitor, hdcMonitor, lprcMonitor, dwData):
+                    monitors = dwData
+                    info = win32api.GetMonitorInfo(hMonitor)
+                    monitors.append({
+                        "name": info["Device"],
+                        "work_area": info["Work"],
+                        "monitor_area": info["Monitor"],
+                        "primary": info["Flags"] & win32con.MONITORINFOF_PRIMARY != 0
+                    })
+                    return True
+                
+                monitors = []
+                win32gui.EnumDisplayMonitors(None, None, enum_display_monitors_proc, monitors)
+                return monitors
+                
+            elif self.platform == "macos":
+                import subprocess
+                try:
+                    # 使用system_profiler获取显示器信息
+                    cmd = ["system_profiler", "SPDisplaysDataType", "-xml"]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        import plistlib
+                        import io
+                        plist_data = plistlib.loads(result.stdout.encode())
+                        displays = []
+                        for display in plist_data[0]["_items"]:
+                            displays.append({
+                                "name": display.get("_name", "Unknown"),
+                                "resolution": display.get("spdisplays_resolution", "Unknown"),
+                                "primary": display.get("spdisplays_main", False)
+                            })
+                        return displays
+                except Exception as e:
+                    self.logger.error(f"获取macOS显示器信息失败: {str(e)}")
+                return None
+                
+            elif self.platform == "linux":
+                import subprocess
+                try:
+                    # 使用xrandr获取显示器信息
+                    cmd = ["xrandr", "--query"]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        displays = []
+                        current_display = None
+                        for line in result.stdout.split("\n"):
+                            if " connected" in line:
+                                name = line.split()[0]
+                                primary = "primary" in line
+                                current_display = {
+                                    "name": name,
+                                    "primary": primary,
+                                    "resolution": None,
+                                    "position": None
+                                }
+                                displays.append(current_display)
+                            elif current_display and "x" in line:
+                                parts = line.strip().split()
+                                if len(parts) >= 1:
+                                    current_display["resolution"] = parts[0]
+                                    if len(parts) >= 4:
+                                        current_display["position"] = (parts[2], parts[3])
+                        return displays
+                except Exception as e:
+                    self.logger.error(f"获取Linux显示器信息失败: {str(e)}")
+                return None
+            else:
+                return None
+        except Exception as e:
+            self.logger.error(f"获取显示器信息失败: {str(e)}")
+            return None
+    
+    def toggle_display_mode(self):
+        """切换显示器模式（扩展/镜像）
+        
+        Returns:
+            bool: 是否成功切换
+        """
+        try:
+            if self.platform == "windows":
+                import win32api
+                import win32con
+                import win32gui
+                
+                # 获取当前显示器信息
+                monitors = self.get_display_info()
+                if not monitors or len(monitors) < 2:
+                    self.logger.error("未检测到多个显示器")
+                    return False
+                
+                # 获取主显示器和第二显示器
+                primary = next((m for m in monitors if m["primary"]), None)
+                secondary = next((m for m in monitors if not m["primary"]), None)
+                
+                if not primary or not secondary:
+                    self.logger.error("无法识别主显示器和第二显示器")
+                    return False
+                
+                # 获取当前显示器设置
+                device = win32api.EnumDisplayDevices(secondary["name"], 0)
+                settings = win32api.EnumDisplaySettings(secondary["name"], win32con.ENUM_CURRENT_SETTINGS)
+                
+                # 切换模式
+                if settings.Position.x == 0 and settings.Position.y == 0:
+                    # 当前是镜像模式，切换到扩展模式
+                    settings.Position.x = primary["work_area"][2]  # 主显示器宽度
+                    settings.Position.y = 0
+                else:
+                    # 当前是扩展模式，切换到镜像模式
+                    settings.Position.x = 0
+                    settings.Position.y = 0
+                
+                # 应用设置
+                result = win32api.ChangeDisplaySettingsEx(
+                    secondary["name"],
+                    settings,
+                    win32con.CDS_UPDATEREGISTRY | win32con.CDS_GLOBAL
+                )
+                
+                if result == win32con.DISP_CHANGE_SUCCESSFUL:
+                    self.logger.info("显示器模式切换成功")
+                    return True
+                else:
+                    self.logger.error(f"显示器模式切换失败，错误代码: {result}")
+                    return False
+                
+            elif self.platform == "macos":
+                import subprocess
+                try:
+                    # 获取当前显示器信息
+                    displays = self.get_display_info()
+                    if not displays or len(displays) < 2:
+                        self.logger.error("未检测到多个显示器")
+                        return False
+                    
+                    # 使用displayplacer切换模式
+                    cmd = ["displayplacer", "list"]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        # 解析当前配置
+                        current_config = result.stdout
+                        if "Mirror" in current_config:
+                            # 当前是镜像模式，切换到扩展模式
+                            cmd = ["displayplacer", "extend"]
+                        else:
+                            # 当前是扩展模式，切换到镜像模式
+                            cmd = ["displayplacer", "mirror"]
+                        
+                        result = subprocess.run(cmd, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            self.logger.info("显示器模式切换成功")
+                            return True
+                        else:
+                            self.logger.error(f"显示器模式切换失败: {result.stderr}")
+                            return False
+                except Exception as e:
+                    self.logger.error(f"切换macOS显示器模式失败: {str(e)}")
+                    return False
+                
+            elif self.platform == "linux":
+                import subprocess
+                try:
+                    # 获取当前显示器信息
+                    displays = self.get_display_info()
+                    if not displays or len(displays) < 2:
+                        self.logger.error("未检测到多个显示器")
+                        return False
+                    
+                    # 获取主显示器和第二显示器
+                    primary = next((d for d in displays if d["primary"]), None)
+                    secondary = next((d for d in displays if not d["primary"]), None)
+                    
+                    if not primary or not secondary:
+                        self.logger.error("无法识别主显示器和第二显示器")
+                        return False
+                    
+                    # 检查当前模式
+                    if secondary["position"] and secondary["position"][0] == "0":
+                        # 当前是镜像模式，切换到扩展模式
+                        cmd = [
+                            "xrandr",
+                            "--output", secondary["name"],
+                            "--mode", secondary["resolution"],
+                            "--pos", f"{primary['resolution'].split('x')[0]}x0"
+                        ]
+                    else:
+                        # 当前是扩展模式，切换到镜像模式
+                        cmd = [
+                            "xrandr",
+                            "--output", secondary["name"],
+                            "--mode", secondary["resolution"],
+                            "--pos", "0x0"
+                        ]
+                    
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        self.logger.info("显示器模式切换成功")
+                        return True
+                    else:
+                        self.logger.error(f"显示器模式切换失败: {result.stderr}")
+                        return False
+                except Exception as e:
+                    self.logger.error(f"切换Linux显示器模式失败: {str(e)}")
+                    return False
+            else:
+                self.logger.error("当前平台不支持显示器模式切换")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"切换显示器模式失败: {str(e)}")
+            return False
+    
+    def rotate_display(self):
+        """旋转第二显示器（顺时针旋转90度）
+        
+        Returns:
+            bool: 是否成功旋转
+        """
+        try:
+            if self.platform == "windows":
+                import win32api
+                import win32con
+                import win32gui
+                
+                # 获取当前显示器信息
+                monitors = self.get_display_info()
+                if not monitors or len(monitors) < 2:
+                    self.logger.error("未检测到多个显示器")
+                    return False
+                
+                # 获取第二显示器
+                secondary = next((m for m in monitors if not m["primary"]), None)
+                if not secondary:
+                    self.logger.error("无法识别第二显示器")
+                    return False
+                
+                # 获取当前显示器设置
+                device = win32api.EnumDisplayDevices(secondary["name"], 0)
+                settings = win32api.EnumDisplaySettings(secondary["name"], win32con.ENUM_CURRENT_SETTINGS)
+                
+                # 获取当前旋转角度
+                current_rotation = settings.DisplayOrientation
+                
+                # 计算新的旋转角度（顺时针旋转90度）
+                new_rotation = (current_rotation + 1) % 4
+                
+                # 设置新的旋转角度
+                settings.DisplayOrientation = new_rotation
+                
+                # 应用设置
+                result = win32api.ChangeDisplaySettingsEx(
+                    secondary["name"],
+                    settings,
+                    win32con.CDS_UPDATEREGISTRY | win32con.CDS_GLOBAL
+                )
+                
+                if result == win32con.DISP_CHANGE_SUCCESSFUL:
+                    self.logger.info("显示器旋转成功")
+                    return True
+                else:
+                    self.logger.error(f"显示器旋转失败，错误代码: {result}")
+                    return False
+                
+            elif self.platform == "macos":
+                import subprocess
+                try:
+                    # 获取当前显示器信息
+                    displays = self.get_display_info()
+                    if not displays or len(displays) < 2:
+                        self.logger.error("未检测到多个显示器")
+                        return False
+                    
+                    # 获取第二显示器
+                    secondary = next((d for d in displays if not d["primary"]), None)
+                    if not secondary:
+                        self.logger.error("无法识别第二显示器")
+                        return False
+                    
+                    # 使用displayplacer获取当前旋转角度
+                    cmd = ["displayplacer", "list"]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        # 解析当前配置
+                        current_config = result.stdout
+                        if "rotation:0" in current_config:
+                            new_rotation = 90
+                        elif "rotation:90" in current_config:
+                            new_rotation = 180
+                        elif "rotation:180" in current_config:
+                            new_rotation = 270
+                        else:
+                            new_rotation = 0
+                        
+                        # 应用新的旋转角度
+                        cmd = ["displayplacer", f"rotate:{secondary['name']}:{new_rotation}"]
+                        result = subprocess.run(cmd, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            self.logger.info("显示器旋转成功")
+                            return True
+                        else:
+                            self.logger.error(f"显示器旋转失败: {result.stderr}")
+                            return False
+                except Exception as e:
+                    self.logger.error(f"旋转macOS显示器失败: {str(e)}")
+                    return False
+                
+            elif self.platform == "linux":
+                import subprocess
+                try:
+                    # 获取当前显示器信息
+                    displays = self.get_display_info()
+                    if not displays or len(displays) < 2:
+                        self.logger.error("未检测到多个显示器")
+                        return False
+                    
+                    # 获取第二显示器
+                    secondary = next((d for d in displays if not d["primary"]), None)
+                    if not secondary:
+                        self.logger.error("无法识别第二显示器")
+                        return False
+                    
+                    # 使用xrandr获取当前旋转角度
+                    cmd = ["xrandr", "--query"]
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    if result.returncode == 0:
+                        # 解析当前配置
+                        current_config = result.stdout
+                        if "normal" in current_config:
+                            new_rotation = "right"
+                        elif "right" in current_config:
+                            new_rotation = "inverted"
+                        elif "inverted" in current_config:
+                            new_rotation = "left"
+                        else:
+                            new_rotation = "normal"
+                        
+                        # 应用新的旋转角度
+                        cmd = [
+                            "xrandr",
+                            "--output", secondary["name"],
+                            "--rotate", new_rotation
+                        ]
+                        result = subprocess.run(cmd, capture_output=True, text=True)
+                        if result.returncode == 0:
+                            self.logger.info("显示器旋转成功")
+                            return True
+                        else:
+                            self.logger.error(f"显示器旋转失败: {result.stderr}")
+                            return False
+                except Exception as e:
+                    self.logger.error(f"旋转Linux显示器失败: {str(e)}")
+                    return False
+            else:
+                self.logger.error("当前平台不支持显示器旋转")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"旋转显示器失败: {str(e)}")
+            return False
+    
     def handle_command(self, command, params=None):
         """处理系统命令
         
@@ -382,32 +1026,36 @@ class PlatformAdapter:
             params: 命令参数
             
         Returns:
-            bool: 命令是否成功执行
+            bool: 命令执行是否成功
         """
-        self.logger.info(f"处理系统命令: {command}, 参数: {params}")
-        
-        if command == "shutdown":
-            delay = params.get("delay", 0) if params else 0
-            return self.shutdown(delay)
-        
-        elif command == "restart":
-            delay = params.get("delay", 0) if params else 0
-            return self.restart(delay)
-        
-        elif command == "set_volume":
-            level = params.get("level", 50) if params else 50
-            return self.set_volume(level)
-        
-        elif command == "toggle_mute":
-            return self.toggle_mute()
-        
-        elif command == "launch_app":
-            app_path = params.get("path") if params else None
-            if not app_path:
-                self.logger.error("缺少应用程序路径参数")
+        try:
+            if command == "shutdown":
+                delay = params.get("delay", 0) if params else 0
+                return self.shutdown(delay)
+            elif command == "restart":
+                delay = params.get("delay", 0) if params else 0
+                return self.restart(delay)
+            elif command == "set_volume":
+                level = params.get("level", 50) if params else 50
+                return self.set_volume(level)
+            elif command == "toggle_mute":
+                return self.toggle_mute()
+            elif command == "launch_app":
+                app_path = params.get("path") if params else None
+                if app_path:
+                    return self.launch_application(app_path)
                 return False
-            return self.launch_application(app_path)
-        
-        else:
-            self.logger.warning(f"未知系统命令: {command}")
+            elif command == "get_system_info":
+                return self.get_system_info()
+            elif command == "get_display_info":
+                return self.get_display_info()
+            elif command == "toggle_display_mode":
+                return self.toggle_display_mode()
+            elif command == "rotate_display":
+                return self.rotate_display()
+            else:
+                self.logger.error(f"未知的命令: {command}")
+                return False
+        except Exception as e:
+            self.logger.error(f"执行命令失败: {command}, 错误: {str(e)}")
             return False 
